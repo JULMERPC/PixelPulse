@@ -22,12 +22,12 @@ sealed class Screen(
         unselectedIcon = Icons.Outlined.Home
     )
 
-    data object Recents : Screen(
-        route = "recents",
-        title = "Recientes",
-        selectedIcon = Icons.Filled.DateRange,
-        unselectedIcon = Icons.Outlined.DateRange
-    )
+//    data object Recents : Screen(
+//        route = "recents",
+//        title = "Recientes",
+//        selectedIcon = Icons.Filled.DateRange,
+//        unselectedIcon = Icons.Outlined.DateRange
+//    )
 
     data object Settings : Screen(
         route = "settings",
@@ -39,6 +39,6 @@ sealed class Screen(
 
 val bottomNavItems = listOf(
     Screen.Home,
-    Screen.Recents,
+//    Screen.Recents,
     Screen.Settings
 )

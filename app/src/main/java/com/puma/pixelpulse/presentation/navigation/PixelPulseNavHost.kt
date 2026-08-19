@@ -63,7 +63,7 @@ fun PixelPulseNavHost() {
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(Screen.Home.route) { HomeScreen() }
-                composable(Screen.Recents.route) { RecentsScreen() }
+//                composable(Screen.Recents.route) { RecentsScreen() }
                 composable(Screen.Settings.route) { SettingsScreen() }
             }
         }
