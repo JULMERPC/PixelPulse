@@ -29,7 +29,8 @@ object DatabaseModule {
             .addMigrations(
                 PixelPulseDatabase.MIGRATION_1_2,
                 PixelPulseDatabase.MIGRATION_2_3,
-                PixelPulseDatabase.MIGRATION_3_4
+                PixelPulseDatabase.MIGRATION_3_4,
+                PixelPulseDatabase.MIGRATION_4_5
             )
             .build()
 

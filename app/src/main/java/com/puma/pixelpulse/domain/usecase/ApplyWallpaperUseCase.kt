@@ -35,7 +35,7 @@ class ApplyWallpaperUseCase @Inject constructor(
             muted = wallpaper.muted,
             volume = if (wallpaper.muted) 0f else 1f,
             playbackSpeed = wallpaper.playbackSpeed,
-            loop = true,
+            loop = wallpaper.loop,
             trimStartMs = wallpaper.trimStartMs,
             trimEndMs = wallpaper.trimEndMs,
             backgroundColor = wallpaper.backgroundColor,

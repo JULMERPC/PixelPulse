@@ -4,8 +4,11 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.puma.pixelpulse.data.local.UserPreferences
+import com.puma.pixelpulse.domain.usecase.RemoveWallpaperUseCase
+import com.puma.pixelpulse.wallpaper.ActiveWallpaperPrefs
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -14,8 +17,17 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val removeWallpaperUseCase: RemoveWallpaperUseCase
 ) : ViewModel() {
+
+    private val _activeWallpaperName = MutableStateFlow<String?>(
+        ActiveWallpaperPrefs.getWallpaperName(context)
+    )
+    val activeWallpaperName: StateFlow<String?> = _activeWallpaperName
+
+    private val _showRemoveDialog = MutableStateFlow(false)
+    val showRemoveDialog: StateFlow<Boolean> = _showRemoveDialog
 
     val themeMode: StateFlow<UserPreferences.ThemeMode> = UserPreferences.getThemeMode(context)
         .stateIn(
@@ -93,5 +105,21 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             UserPreferences.setDefaultMuted(context, muted)
         }
+    }
+
+    fun requestRemoveWallpaper() {
+        _showRemoveDialog.value = true
+    }
+
+    fun confirmRemoveWallpaper() {
+        _showRemoveDialog.value = false
+        viewModelScope.launch {
+            removeWallpaperUseCase()
+            _activeWallpaperName.value = null
+        }
+    }
+
+    fun cancelRemoveWallpaper() {
+        _showRemoveDialog.value = false
     }
 }

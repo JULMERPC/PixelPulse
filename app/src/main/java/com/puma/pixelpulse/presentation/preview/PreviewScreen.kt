@@ -385,13 +385,13 @@ private fun BottomSheetContent(
                 onClick = { onSetScaleMode(ScaleMode.CENTER_CROP) },
                 modifier = Modifier.weight(1f)
             )
-            ScaleModeChip(
-                label = "Ajustar",
-                description = "Tamaño original",
-                isSelected = scaleMode == ScaleMode.ORIGINAL,
-                onClick = { onSetScaleMode(ScaleMode.ORIGINAL) },
-                modifier = Modifier.weight(1f)
-            )
+//            ScaleModeChip(
+//                label = "Ajustar",
+//                description = "Tamaño original",
+//                isSelected = scaleMode == ScaleMode.ORIGINAL,
+//                onClick = { onSetScaleMode(ScaleMode.ORIGINAL) },
+//                modifier = Modifier.weight(1f)
+//            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))

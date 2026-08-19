@@ -17,16 +17,20 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -50,6 +54,9 @@ fun HomeScreen(
 ) {
     val wallpapers by viewModel.wallpapers.collectAsStateWithLifecycle()
     val importState by viewModel.importState.collectAsStateWithLifecycle()
+    val scanState by viewModel.scanState.collectAsStateWithLifecycle()
+    val wallpaperToDelete by viewModel.wallpaperToDelete.collectAsStateWithLifecycle()
+    val activeWallpaperUri by viewModel.activeWallpaperUri.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -79,6 +86,43 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(scanState) {
+        when (scanState) {
+            is HomeScanState.Success -> {
+                val count = (scanState as HomeScanState.Success).count
+                snackbarHostState.showSnackbar("Se encontraron $count videos nuevos")
+                viewModel.resetScanState()
+            }
+            is HomeScanState.Error -> {
+                snackbarHostState.showSnackbar((scanState as HomeScanState.Error).message)
+                viewModel.resetScanState()
+            }
+            else -> {}
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshActiveWallpaper()
+    }
+
+    wallpaperToDelete?.let { wallpaper ->
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelDelete() },
+            title = { Text("Eliminar wallpaper") },
+            text = { Text("¿Eliminar \"${wallpaper.name}\" de tu biblioteca?") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmDelete() }) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.cancelDelete() }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,6 +131,14 @@ fun HomeScreen(
                         text = "PixelPulse",
                         style = MaterialTheme.typography.headlineMedium
                     )
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.scanVideos() }) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = "Scan videos"
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
@@ -127,10 +179,12 @@ fun HomeScreen(
                     items(wallpapers, key = { it.id }) { wallpaper ->
                         WallpaperGridItem(
                             wallpaper = wallpaper,
+                            isActive = wallpaper.uri == activeWallpaperUri,
                             onClick = {
                                 val intent = PreviewActivity.createIntent(context, wallpaper.id)
                                 previewLauncher.launch(intent)
                             },
+                            onLongClick = { viewModel.requestDelete(wallpaper) },
                             onFavoriteClick = { viewModel.toggleFavorite(wallpaper) }
                         )
                     }

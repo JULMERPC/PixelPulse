@@ -16,6 +16,7 @@ data class Wallpaper(
     val playbackSpeed: Float = 1f,
     val scaleMode: ScaleMode = ScaleMode.CENTER_CROP,
     val muted: Boolean = true,
+    val loop: Boolean = true,
     val lastUsedAt: Long = 0L,
     val trimStartMs: Long = 0L,
     val trimEndMs: Long = 0L,

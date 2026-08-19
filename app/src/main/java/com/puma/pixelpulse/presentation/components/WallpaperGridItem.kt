@@ -2,6 +2,7 @@ package com.puma.pixelpulse.presentation.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -41,6 +43,7 @@ import java.util.concurrent.TimeUnit
 @Composable
 fun WallpaperGridItem(
     wallpaper: Wallpaper,
+    isActive: Boolean = false,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     onFavoriteClick: (() -> Unit)? = null,
@@ -50,6 +53,10 @@ fun WallpaperGridItem(
         modifier = modifier
             .fillMaxWidth()
             .height(220.dp)
+            .then(
+                if (isActive) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+                else Modifier
+            )
             .combinedClickable(
                 onClick = { onClick?.invoke() },
                 onLongClick = onLongClick?.let { { it() } }
@@ -123,16 +130,16 @@ fun WallpaperGridItem(
                         .padding(4.dp)
                         .size(32.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Favorite,
-                        contentDescription = "Favorite",
-                        tint = if (wallpaper.isFavorite) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                        },
-                        modifier = Modifier.size(20.dp)
-                    )
+//                    Icon(
+//                        imageVector = Icons.Filled.Favorite,
+//                        contentDescription = "Favorite",
+//                        tint = if (wallpaper.isFavorite) {
+//                            MaterialTheme.colorScheme.error
+//                        } else {
+//                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+//                        },
+//                        modifier = Modifier.size(20.dp)
+//                    )
                 }
             }
 
@@ -145,13 +152,26 @@ fun WallpaperGridItem(
                     )
                     .padding(8.dp)
             ) {
-                Text(
-                    text = wallpaper.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (isActive) {
+                        Icon(
+                            imageVector = Icons.Filled.CheckCircle,
+                            contentDescription = "Active",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                    Text(
+                        text = wallpaper.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {

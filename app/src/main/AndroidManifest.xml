@@ -35,6 +35,11 @@
             android:exported="false"
             android:theme="@style/Theme.PixelPulse" />
 
+        <activity
+            android:name=".presentation.settings.PrivacyPolicyActivity"
+            android:exported="false"
+            android:theme="@style/Theme.PixelPulse" />
+
         <service
             android:name=".wallpaper.PixelPulseWallpaperService"
             android:exported="true"

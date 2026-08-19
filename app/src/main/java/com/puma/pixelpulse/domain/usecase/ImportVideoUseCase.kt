@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import com.puma.pixelpulse.data.local.UserPreferences
 import com.puma.pixelpulse.data.media.ThumbnailGenerator
 import com.puma.pixelpulse.domain.model.Wallpaper
 import com.puma.pixelpulse.domain.model.WallpaperType
@@ -37,6 +38,10 @@ class ImportVideoUseCase @Inject constructor(
 
         val thumbnailPath = thumbnailGenerator.generateThumbnail(videoUri)
 
+        val defaultMuted = UserPreferences.getDefaultMutedOnce(context)
+        val defaultSpeed = UserPreferences.getDefaultSpeedOnce(context)
+        val defaultLoop = UserPreferences.getDefaultLoopOnce(context)
+
         val wallpaper = Wallpaper(
             uri = videoUri.toString(),
             name = metadata.name,
@@ -47,7 +52,10 @@ class ImportVideoUseCase @Inject constructor(
             height = metadata.height,
             sizeBytes = metadata.sizeBytes,
             dateAdded = System.currentTimeMillis(),
-            dateModified = System.currentTimeMillis()
+            dateModified = System.currentTimeMillis(),
+            muted = defaultMuted,
+            playbackSpeed = defaultSpeed,
+            loop = defaultLoop
         )
 
         val id = repository.insert(wallpaper)

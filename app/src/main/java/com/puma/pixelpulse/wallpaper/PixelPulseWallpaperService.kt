@@ -57,10 +57,11 @@ class PixelPulseWallpaperService : WallpaperService() {
         private var lastAppliedScaleMode: ScaleMode? = null
         private var lastAppliedBgColor = Color.BLACK
         private var lastAppliedUri = ""
+        private var lastAppliedTrimStart = 0L
+        private var lastAppliedTrimEnd = 0L
         private var canvasReady = false
 
         private val mainHandler = Handler(Looper.getMainLooper())
-        private var trimEndRunnable: Runnable? = null
 
         private var videoWidth = 0
         private var videoHeight = 0
@@ -89,16 +90,22 @@ class PixelPulseWallpaperService : WallpaperService() {
             cachedSurfaceHeight = height
             log("Surface changed: ${width}x${height}")
 
+            val currentTrimStart = ActiveWallpaperPrefs.getTrimStartMs(applicationContext)
+            val currentTrimEnd = ActiveWallpaperPrefs.getTrimEndMs(applicationContext)
             val needsInit = exoPlayer == null ||
                     lastAppliedScaleMode != scaleMode ||
                     lastAppliedUri != (ActiveWallpaperPrefs.getWallpaperUri(applicationContext) ?: "") ||
-                    lastAppliedBgColor != backgroundColor
+                    lastAppliedBgColor != backgroundColor ||
+                    lastAppliedTrimStart != currentTrimStart ||
+                    lastAppliedTrimEnd != currentTrimEnd
 
             if (needsInit) {
                 log("Initializing player on surfaceChanged (dimensions now available)")
                 lastAppliedScaleMode = scaleMode
                 lastAppliedBgColor = backgroundColor
                 lastAppliedUri = ActiveWallpaperPrefs.getWallpaperUri(applicationContext) ?: ""
+                lastAppliedTrimStart = currentTrimStart
+                lastAppliedTrimEnd = currentTrimEnd
                 canvasReady = false
                 initializePlayer()
             } else if (useCanvasRendering && canvasReady) {
@@ -118,15 +125,21 @@ class PixelPulseWallpaperService : WallpaperService() {
             if (visible) {
                 loadSettings()
                 val currentUri = ActiveWallpaperPrefs.getWallpaperUri(applicationContext) ?: ""
+                val currentTrimStart = ActiveWallpaperPrefs.getTrimStartMs(applicationContext)
+                val currentTrimEnd = ActiveWallpaperPrefs.getTrimEndMs(applicationContext)
                 val settingsChanged = scaleMode != lastAppliedScaleMode ||
                         backgroundColor != lastAppliedBgColor ||
-                        currentUri != lastAppliedUri
+                        currentUri != lastAppliedUri ||
+                        lastAppliedTrimStart != currentTrimStart ||
+                        lastAppliedTrimEnd != currentTrimEnd
 
                 if (settingsChanged) {
                     log("Settings changed - reinit. scaleMode=$scaleMode (was $lastAppliedScaleMode)")
                     lastAppliedScaleMode = scaleMode
                     lastAppliedBgColor = backgroundColor
                     lastAppliedUri = currentUri
+                    lastAppliedTrimStart = currentTrimStart
+                    lastAppliedTrimEnd = currentTrimEnd
                     canvasReady = false
                     initializePlayer()
                 } else if (useCanvasRendering && canvasReady) {
@@ -155,6 +168,8 @@ class PixelPulseWallpaperService : WallpaperService() {
             surfaceHolder = null
             lastAppliedScaleMode = null
             lastAppliedUri = ""
+            lastAppliedTrimStart = 0L
+            lastAppliedTrimEnd = 0L
             videoWidth = 0
             videoHeight = 0
             log("Surface destroyed")
@@ -238,12 +253,6 @@ class PixelPulseWallpaperService : WallpaperService() {
                                 isPlayerPrepared = true
                                 log("ExoPlayer STATE_READY, took ${System.currentTimeMillis() - engineCreateTime}ms")
 
-                                val trimStart = ActiveWallpaperPrefs.getTrimStartMs(context)
-                                if (trimStart > 0) {
-                                    player.seekTo(trimStart)
-                                    log("Seeked to trim start: ${trimStart}ms")
-                                }
-
                                 val isMuted = ActiveWallpaperPrefs.isMuted(context)
                                 val baseVolume = ActiveWallpaperPrefs.getVolume(context)
                                 val vol = if (isMuted) 0f else baseVolume.coerceAtLeast(0.1f)
@@ -257,19 +266,13 @@ class PixelPulseWallpaperService : WallpaperService() {
                                 player.play()
                                 isPlayerStarted = true
                                 log("ExoPlayer started (scaleMode=$scaleMode)")
-
-                                val isLooping = ActiveWallpaperPrefs.isLoop(context)
-                                if (!isLooping) {
-                                    setupTrimEndListener(player)
-                                }
                             }
                             Player.STATE_ENDED -> {
                                 log("ExoPlayer STATE_ENDED")
                                 isPlayerStarted = false
                                 val isLooping = ActiveWallpaperPrefs.isLoop(context)
                                 if (isLooping) {
-                                    val trimStart = ActiveWallpaperPrefs.getTrimStartMs(context)
-                                    player.seekTo(if (trimStart > 0) trimStart else 0L)
+                                    player.seekTo(0L)
                                     player.play()
                                     isPlayerStarted = true
                                 }
@@ -352,11 +355,6 @@ class PixelPulseWallpaperService : WallpaperService() {
                                 isPlayerPrepared = true
                                 log("ExoPlayer Canvas: STATE_READY")
 
-                                val trimStart = ActiveWallpaperPrefs.getTrimStartMs(context)
-                                if (trimStart > 0) {
-                                    player.seekTo(trimStart)
-                                }
-
                                 val isMuted = ActiveWallpaperPrefs.isMuted(context)
                                 val baseVolume = ActiveWallpaperPrefs.getVolume(context)
                                 val vol = if (isMuted) 0f else baseVolume.coerceAtLeast(0.1f)
@@ -370,18 +368,12 @@ class PixelPulseWallpaperService : WallpaperService() {
                                 player.play()
                                 isPlayerStarted = true
                                 log("ExoPlayer Canvas: started")
-
-                                val isLooping = ActiveWallpaperPrefs.isLoop(context)
-                                if (!isLooping) {
-                                    setupTrimEndListener(player)
-                                }
                             }
                             Player.STATE_ENDED -> {
                                 isPlayerStarted = false
                                 val isLooping = ActiveWallpaperPrefs.isLoop(context)
                                 if (isLooping) {
-                                    val trimStart = ActiveWallpaperPrefs.getTrimStartMs(context)
-                                    player.seekTo(if (trimStart > 0) trimStart else 0L)
+                                    player.seekTo(0L)
                                     player.play()
                                     isPlayerStarted = true
                                 }
@@ -433,32 +425,6 @@ class PixelPulseWallpaperService : WallpaperService() {
             loadThumbnailForCanvas()
         }
 
-        private fun setupTrimEndListener(player: ExoPlayer) {
-            val trimEndMs = ActiveWallpaperPrefs.getTrimEndMs(applicationContext)
-            if (trimEndMs <= 0) return
-
-            val runnable = object : Runnable {
-                override fun run() {
-                    if (exoPlayer == null || !isPlayerPrepared) return
-                    try {
-                        val pos = player.currentPosition
-                        if (pos >= trimEndMs) {
-                            val trimStart = ActiveWallpaperPrefs.getTrimStartMs(applicationContext)
-                            player.seekTo(if (trimStart > 0) trimStart else 0)
-                            log("Trim end reached, looping from ${trimStart}ms")
-                        }
-                        if (exoPlayer != null) {
-                            mainHandler.postDelayed(this, 100)
-                        }
-                    } catch (e: Exception) {
-                        log("Trim check error: ${e.message}")
-                    }
-                }
-            }
-            trimEndRunnable = runnable
-            mainHandler.postDelayed(runnable, 100)
-        }
-
         private fun resumePlayback() {
             if (!isPlayerPrepared) return
             try {
@@ -488,8 +454,6 @@ class PixelPulseWallpaperService : WallpaperService() {
         private fun releasePlayer() {
             isPlayerPrepared = false
             isPlayerStarted = false
-            trimEndRunnable?.let { mainHandler.removeCallbacks(it) }
-            trimEndRunnable = null
             try {
                 exoPlayer?.release()
             } catch (e: Exception) {

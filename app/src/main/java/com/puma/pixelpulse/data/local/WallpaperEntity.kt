@@ -21,6 +21,7 @@ data class WallpaperEntity(
     val playbackSpeed: Float = 1f,
     val scaleMode: String = "CENTER_CROP",
     val muted: Boolean = true,
+    val loop: Boolean = true,
     val lastUsedAt: Long = 0L,
     val trimStartMs: Long = 0L,
     val trimEndMs: Long = 0L,

@@ -17,10 +17,12 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -31,30 +33,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
-import com.puma.pixelpulse.domain.model.Wallpaper
-import com.puma.pixelpulse.domain.repository.WallpaperRepository
 import com.puma.pixelpulse.presentation.components.WallpaperGridItem
 import com.puma.pixelpulse.presentation.preview.PreviewActivity
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
-import javax.inject.Inject
-
-@HiltViewModel
-class RecentsViewModel @Inject constructor(
-    repository: WallpaperRepository
-) : ViewModel() {
-    val recents: StateFlow<List<Wallpaper>> = repository.getRecentWallpapers()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,10 +43,29 @@ fun RecentsScreen(
     viewModel: RecentsViewModel = hiltViewModel()
 ) {
     val recents by viewModel.recents.collectAsStateWithLifecycle()
+    val wallpaperToDelete by viewModel.wallpaperToDelete.collectAsStateWithLifecycle()
     val previewLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { }
     val context = LocalContext.current
+
+    wallpaperToDelete?.let { wallpaper ->
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelDelete() },
+            title = { Text("Eliminar wallpaper") },
+            text = { Text("¿Eliminar \"${wallpaper.name}\" de recientes?") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmDelete() }) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.cancelDelete() }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -124,6 +124,7 @@ fun RecentsScreen(
                             val intent = PreviewActivity.createIntent(context, wallpaper.id)
                             previewLauncher.launch(intent)
                         },
+                        onLongClick = { viewModel.requestDelete(wallpaper) },
                         onFavoriteClick = null
                     )
                 }

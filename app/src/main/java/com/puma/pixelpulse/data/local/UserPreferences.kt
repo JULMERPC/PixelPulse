@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
@@ -96,4 +97,16 @@ object UserPreferences {
             prefs[KEY_DEFAULT_MUTED] = muted
         }
     }
+
+    suspend fun getDefaultVolumeOnce(context: Context): Float =
+        context.dataStore.data.map { prefs -> prefs[KEY_DEFAULT_VOLUME] ?: 0.5f }.first()
+
+    suspend fun getDefaultSpeedOnce(context: Context): Float =
+        context.dataStore.data.map { prefs -> prefs[KEY_DEFAULT_SPEED] ?: 1f }.first()
+
+    suspend fun getDefaultLoopOnce(context: Context): Boolean =
+        context.dataStore.data.map { prefs -> prefs[KEY_DEFAULT_LOOP] ?: true }.first()
+
+    suspend fun getDefaultMutedOnce(context: Context): Boolean =
+        context.dataStore.data.map { prefs -> prefs[KEY_DEFAULT_MUTED] ?: true }.first()
 }

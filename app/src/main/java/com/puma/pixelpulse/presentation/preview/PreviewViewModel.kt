@@ -30,7 +30,7 @@ class PreviewViewModel @Inject constructor(
     private val _isMuted = MutableStateFlow(true)
     val isMuted: StateFlow<Boolean> = _isMuted
 
-    private val _loopEnabled = MutableStateFlow(true)
+    private val _loopEnabled = MutableStateFlow(false)
     val loopEnabled: StateFlow<Boolean> = _loopEnabled
 
     private val _playbackSpeed = MutableStateFlow(1f)
@@ -57,6 +57,7 @@ class PreviewViewModel @Inject constructor(
             _wallpaper.value = wallpaper
             wallpaper?.let {
                 _isMuted.value = it.muted
+                _loopEnabled.value = it.loop
                 _playbackSpeed.value = it.playbackSpeed
                 _videoDurationMs.value = it.duration
                 _trimStartMs.value = it.trimStartMs
@@ -123,7 +124,8 @@ class PreviewViewModel @Inject constructor(
             trimStartMs = _trimStartMs.value,
             trimEndMs = _trimEndMs.value,
             backgroundColor = _backgroundColor.value,
-            scaleMode = _scaleMode.value
+            scaleMode = _scaleMode.value,
+            loop = _loopEnabled.value
         )
         return applyWallpaperUseCase(updated)
     }
@@ -137,7 +139,8 @@ class PreviewViewModel @Inject constructor(
                 trimStartMs = _trimStartMs.value,
                 trimEndMs = _trimEndMs.value,
                 backgroundColor = _backgroundColor.value,
-                scaleMode = _scaleMode.value
+                scaleMode = _scaleMode.value,
+                loop = _loopEnabled.value
             )
             repository.update(updated)
             _wallpaper.value = updated

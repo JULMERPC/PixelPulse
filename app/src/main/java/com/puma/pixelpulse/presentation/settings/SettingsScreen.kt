@@ -1,5 +1,7 @@
 package com.puma.pixelpulse.presentation.settings
 
+import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -7,12 +9,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -21,12 +28,14 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -44,6 +53,34 @@ fun SettingsScreen(
     val defaultSpeed by viewModel.defaultSpeed.collectAsStateWithLifecycle()
     val defaultLoop by viewModel.defaultLoop.collectAsStateWithLifecycle()
     val defaultMuted by viewModel.defaultMuted.collectAsStateWithLifecycle()
+    val activeWallpaperName by viewModel.activeWallpaperName.collectAsStateWithLifecycle()
+    val showRemoveDialog by viewModel.showRemoveDialog.collectAsStateWithLifecycle()
+
+    if (showRemoveDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelRemoveWallpaper() },
+            title = { Text("Quitar wallpaper") },
+            text = {
+                Text(
+                    if (activeWallpaperName != null) {
+                        "¿Quitar \"$activeWallpaperName\" como fondo de pantalla? Se restaurará el fondo predeterminado del sistema."
+                    } else {
+                        "¿Quitar el fondo de pantalla actual? Se restaurará el fondo predeterminado del sistema."
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmRemoveWallpaper() }) {
+                    Text("Quitar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.cancelRemoveWallpaper() }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -80,6 +117,57 @@ fun SettingsScreen(
                 )
             }
 
+            SettingsSection(title = "Wallpaper actual") {
+                if (activeWallpaperName != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = activeWallpaperName ?: "",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = "Fondo de pantalla activo",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.requestRemoveWallpaper() }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Quitar wallpaper",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "No hay wallpaper activo",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+            }
+
             SettingsSection(title = "Wallpaper por defecto") {
                 SettingsSlider(
                     title = "Volumen",
@@ -112,10 +200,70 @@ fun SettingsScreen(
                 )
             }
 
+//            SettingsSection(title = "Wallpaper actual") {
+//                if (activeWallpaperName != null) {
+//                    Row(
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .padding(vertical = 8.dp),
+//                        verticalAlignment = Alignment.CenterVertically
+//                    ) {
+//                        Column(modifier = Modifier.weight(1f)) {
+//                            Text(
+//                                text = activeWallpaperName ?: "",
+//                                style = MaterialTheme.typography.bodyLarge
+//                            )
+//                            Text(
+//                                text = "Fondo de pantalla activo",
+//                                style = MaterialTheme.typography.bodySmall,
+//                                color = MaterialTheme.colorScheme.onSurfaceVariant
+//                            )
+//                        }
+//                    }
+//
+//                    Row(
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .clickable { viewModel.requestRemoveWallpaper() }
+//                            .padding(vertical = 12.dp),
+//                        verticalAlignment = Alignment.CenterVertically
+//                    ) {
+//                        Icon(
+//                            imageVector = Icons.Filled.Delete,
+//                            contentDescription = null,
+//                            tint = MaterialTheme.colorScheme.error,
+//                            modifier = Modifier.size(20.dp)
+//                        )
+//                        Spacer(modifier = Modifier.width(8.dp))
+//                        Text(
+//                            text = "Quitar wallpaper",
+//                            style = MaterialTheme.typography.bodyLarge,
+//                            color = MaterialTheme.colorScheme.error
+//                        )
+//                    }
+//                } else {
+//                    Text(
+//                        text = "No hay wallpaper activo",
+//                        style = MaterialTheme.typography.bodyMedium,
+//                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+//                        modifier = Modifier.padding(vertical = 8.dp)
+//                    )
+//                }
+//            }
+
             SettingsSection(title = "Acerca de") {
                 SettingsInfo(
                     title = "PixelPulse",
                     subtitle = "Versión 1.0"
+                )
+
+                val context = LocalContext.current
+                SettingsInfo(
+                    title = "Política de Privacidad",
+                    subtitle = "Ver política de privacidad",
+                    modifier = Modifier.clickable {
+                        context.startActivity(Intent(context, PrivacyPolicyActivity::class.java))
+                    }
                 )
             }
 
@@ -252,9 +400,10 @@ private fun SettingsSlider(
 @Composable
 private fun SettingsInfo(
     title: String,
-    subtitle: String
+    subtitle: String,
+    modifier: Modifier = Modifier
 ) {
-    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+    Column(modifier = modifier.padding(vertical = 8.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge
