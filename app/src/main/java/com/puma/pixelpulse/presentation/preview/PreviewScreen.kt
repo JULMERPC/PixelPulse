@@ -296,32 +296,35 @@ private fun BottomSheetContent(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ControlButton(
                 icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                 label = if (isPlaying) "Pausa" else "Play",
                 isActive = isPlaying,
-                onClick = onTogglePlayPause
+                onClick = onTogglePlayPause,
+                modifier = Modifier.weight(1f)
             )
             ControlButton(
                 icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
                 label = if (isMuted) "Mute" else "Sonido",
                 isActive = !isMuted,
-                onClick = onToggleMute
+                onClick = onToggleMute,
+                modifier = Modifier.weight(1f)
             )
             ControlButton(
                 icon = Icons.Filled.Repeat,
                 label = "Loop",
                 isActive = loopEnabled,
-                onClick = onToggleLoop
+                onClick = onToggleLoop,
+                modifier = Modifier.weight(1f)
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         SectionTitle(icon = Icons.Filled.Speed, title = "Velocidad: ${playbackSpeed}x")
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -337,12 +340,12 @@ private fun BottomSheetContent(
         }
 
         if (videoDurationMs > 0) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             SectionTitle(
                 icon = Icons.Filled.Speed,
                 title = "Recortar: ${formatTime(trimStartMs)} - ${formatTime(trimEndMs)}"
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             val sliderStart = remember(trimStartMs, videoDurationMs) {
                 if (videoDurationMs > 0) trimStartMs.toFloat() / videoDurationMs.toFloat() else 0f
             }
@@ -363,13 +366,13 @@ private fun BottomSheetContent(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         SectionTitle(icon = Icons.Filled.CropFree, title = "Modo de escala")
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ScaleModeChip(
                 label = "Estirar",
@@ -385,19 +388,12 @@ private fun BottomSheetContent(
                 onClick = { onSetScaleMode(ScaleMode.CENTER_CROP) },
                 modifier = Modifier.weight(1f)
             )
-//            ScaleModeChip(
-//                label = "Ajustar",
-//                description = "Tamaño original",
-//                isSelected = scaleMode == ScaleMode.ORIGINAL,
-//                onClick = { onSetScaleMode(ScaleMode.ORIGINAL) },
-//                modifier = Modifier.weight(1f)
-//            )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         SectionTitle(icon = Icons.Filled.ColorLens, title = "Color de fondo")
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -418,13 +414,13 @@ private fun BottomSheetContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = onApply,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .height(52.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary
@@ -459,13 +455,13 @@ private fun SectionTitle(icon: ImageVector, title: String) {
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(18.dp)
         )
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
     }
@@ -476,18 +472,22 @@ private fun ControlButton(
     icon: ImageVector,
     label: String,
     isActive: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+            .padding(vertical = 8.dp),
     ) {
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(CircleShape)
+                .clip(RoundedCornerShape(14.dp))
                 .background(
-                    if (isActive) MaterialTheme.colorScheme.primary
+                    if (isActive) MaterialTheme.colorScheme.primaryContainer
                     else MaterialTheme.colorScheme.surfaceVariant
                 ),
             contentAlignment = Alignment.Center
@@ -495,15 +495,16 @@ private fun ControlButton(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (isActive) MaterialTheme.colorScheme.onPrimary
+                tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer
                 else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(22.dp)
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal,
             color = if (isActive) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -519,18 +520,19 @@ private fun SpeedChip(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(10.dp))
             .background(
                 if (isSelected) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surfaceVariant
             )
             .clickable { onClick() }
-            .padding(vertical = 8.dp),
+            .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = "${speed}x",
             style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
             else MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -547,18 +549,19 @@ private fun ScaleModeChip(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(
                 if (isSelected) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surfaceVariant
             )
             .clickable { onClick() }
-            .padding(vertical = 8.dp),
+            .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
             else MaterialTheme.colorScheme.onSurfaceVariant
         )

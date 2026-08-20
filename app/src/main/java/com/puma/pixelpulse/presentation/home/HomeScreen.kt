@@ -3,12 +3,18 @@ package com.puma.pixelpulse.presentation.home
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,16 +28,17 @@ import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,7 +46,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -59,6 +68,7 @@ fun HomeScreen(
     val activeWallpaperUri by viewModel.activeWallpaperUri.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -124,13 +134,22 @@ fun HomeScreen(
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            LargeTopAppBar(
                 title = {
-                    Text(
-                        text = "PixelPulse",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
+                    Column {
+                        Text(
+                            text = "PixelPulse",
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${wallpapers.size} wallpapers",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.scanVideos() }) {
@@ -140,54 +159,81 @@ fun HomeScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = {
                     importLauncher.launch(arrayOf("video/mp4", "video/webm", "video/quicktime"))
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Import video"
+                },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = null
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Importar",
+                        fontWeight = FontWeight.Medium
+                    )
+                },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 6.dp,
+                    pressedElevation = 12.dp
                 )
-            }
+            )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        when {
-            importState is HomeImportState.Loading -> {
-                LoadingState(modifier = Modifier.padding(padding))
-            }
-            wallpapers.isEmpty() -> {
-                EmptyState(modifier = Modifier.padding(padding))
-            }
-            else -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                ) {
-                    items(wallpapers, key = { it.id }) { wallpaper ->
-                        WallpaperGridItem(
-                            wallpaper = wallpaper,
-                            isActive = wallpaper.uri == activeWallpaperUri,
-                            onClick = {
-                                val intent = PreviewActivity.createIntent(context, wallpaper.id)
-                                previewLauncher.launch(intent)
-                            },
-                            onLongClick = { viewModel.requestDelete(wallpaper) },
-                            onFavoriteClick = { viewModel.toggleFavorite(wallpaper) }
-                        )
-                    }
+        AnimatedVisibility(
+            visible = importState is HomeImportState.Loading,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            LoadingState(modifier = Modifier.padding(padding))
+        }
+
+        AnimatedVisibility(
+            visible = importState !is HomeImportState.Loading && wallpapers.isEmpty(),
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            EmptyState(modifier = Modifier.padding(padding))
+        }
+
+        AnimatedVisibility(
+            visible = importState !is HomeImportState.Loading && wallpapers.isNotEmpty(),
+            enter = fadeIn() + slideInVertically(),
+            exit = fadeOut() + slideOutVertically()
+        ) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                items(wallpapers, key = { it.id }) { wallpaper ->
+                    WallpaperGridItem(
+                        wallpaper = wallpaper,
+                        isActive = wallpaper.uri == activeWallpaperUri,
+                        onClick = {
+                            val intent = PreviewActivity.createIntent(context, wallpaper.id)
+                            previewLauncher.launch(intent)
+                        },
+                        onLongClick = { viewModel.requestDelete(wallpaper) },
+                        onFavoriteClick = { viewModel.toggleFavorite(wallpaper) }
+                    )
                 }
             }
         }
@@ -205,12 +251,14 @@ private fun LoadingState(modifier: Modifier = Modifier) {
         ) {
             CircularProgressIndicator(
                 modifier = Modifier.size(48.dp),
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 4.dp
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = "Importing video...",
+                text = "Importando video...",
                 style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -224,26 +272,35 @@ private fun EmptyState(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 48.dp)
         ) {
-            Icon(
-                imageVector = Icons.Filled.Videocam,
-                contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Videocam,
+                    contentDescription = null,
+                    modifier = Modifier.size(56.dp),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "No hay wallpapers",
-                style = MaterialTheme.typography.titleLarge,
+                text = "Sin wallpapers",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Presiona + para importar un video",
+                text = "Importa un video para crear tu primer wallpaper animado",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp)
+                textAlign = TextAlign.Center
             )
         }
     }
